@@ -1,112 +1,112 @@
-# TorqMIT — AK40-10 Torque/Current Verification Tool
+# TorqMIT — Tool Verifikasi Torsi/Arus Motor AK40-10
 
-Desktop GUI application for torque and current verification of the **CubeMars AK40-10** brushless actuator motor (planetary gearbox 10:1, 14 pole pairs). Supports **UART Servo**, **CAN Servo**, and **CAN MIT** (impedance control) modes with real-time plotting, automated step sweep, and CSV data recording.
+Aplikasi desktop GUI untuk verifikasi torsi dan arus motor aktuator brushless **CubeMars AK40-10** (planetary gearbox 10:1, 14 pole pairs). Mendukung mode **UART Servo**, **CAN Servo**, dan **CAN MIT** (kontrol impedansi) dengan plotting real-time, step sweep otomatis, dan perekaman data CSV.
 
 ---
 
-## Table of Contents
+## Daftar Isi
 
-- [Features](#features)
-- [Motor Specifications](#motor-specifications)
-- [Communication Modes](#communication-modes)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Main Application (GUI)](#main-application-gui)
-  - [CAN Diagnostic Script](#can-diagnostic-script)
-  - [MIT Continuous Test Script](#mit-continuous-test-script)
-- [GUI Workflow](#gui-workflow)
-  - [Connection](#1-connection)
-  - [Input Mode Selection](#2-input-mode-selection)
-  - [Parameter Configuration](#3-parameter-configuration)
-  - [Sending Commands](#4-sending-commands)
-  - [Step Sweep Automation](#5-step-sweep-automation)
-  - [Data Recording](#6-data-recording)
-  - [Capture & Annotation](#7-capture--annotation)
+- [Fitur](#fitur)
+- [Spesifikasi Motor](#spesifikasi-motor)
+- [Mode Komunikasi](#mode-komunikasi)
+- [Arsitektur](#arsitektur)
+- [Prasyarat](#prasyarat)
+- [Instalasi](#instalasi)
+- [Cara Pakai](#cara-pakai)
+  - [Aplikasi Utama (GUI)](#aplikasi-utama-gui)
+  - [Script Diagnostik CAN](#script-diagnostik-can)
+  - [Script Tes MIT Kontinu](#script-tes-mit-kontinu)
+- [Alur Kerja GUI](#alur-kerja-gui)
+  - [Koneksi](#1-koneksi)
+  - [Pemilihan Mode Input](#2-pemilihan-mode-input)
+  - [Konfigurasi Parameter](#3-konfigurasi-parameter)
+  - [Mengirim Perintah](#4-mengirim-perintah)
+  - [Step Sweep Otomatis](#5-step-sweep-otomatis)
+  - [Perekaman Data](#6-perekaman-data)
+  - [Capture & Anotasi](#7-capture--anotasi)
   - [Emergency Stop](#8-emergency-stop)
-- [MIT Mode Protocol](#mit-mode-protocol)
-- [Key Formulas](#key-formulas)
-- [CSV Data Format](#csv-data-format)
-- [Project Structure](#project-structure)
+- [Protokol MIT Mode](#protokol-mit-mode)
+- [Rumus Utama](#rumus-utama)
+- [Format Data CSV](#format-data-csv)
+- [Struktur Proyek](#struktur-proyek)
 - [Troubleshooting](#troubleshooting)
-- [References](#references)
+- [Referensi](#referensi)
 
 ---
 
-## Features
+## Fitur
 
-- **3 communication interfaces**: UART Serial (921600 baud), CAN Servo (extended frames), CAN MIT (standard frames)
-- **Dual input mode**: Current (A) or Torque (Nm) with automatic conversion via effective Kt
-- **Real-time dual-plot**: Current (A) and Torque (Nm) — target vs actual, 30-second rolling window at 20 Hz
-- **Automated step sweep**: Configurable start/end/step/dwell with auto-capture at 80% of dwell time
-- **CSV data recording**: 14-column format with metadata header, auto-starts on connect
-- **Capture & annotation**: Mark data points on graphs with labels (target, actual, error, torque, speed)
-- **CAN auto-detect**: Automatically detects motor CAN ID from servo broadcast traffic
-- **MIT mode auto-enter**: Aggressive 5-attempt MIT enter sequence with verification
-- **Current ramping**: Configurable ramp rate (A/s or Nm/s) to prevent sudden jerks
-- **E-STOP**: ESC key shortcut, immediately zeros all outputs
-- **Simulation mode**: Full physics simulation with noise for testing without hardware
-- **Dark theme UI**: PySide6/Qt6 with custom dark stylesheet
-- **Serial monitor**: Optional UART monitoring alongside CAN communication
-- **Live telemetry**: Current, torque, speed, position, temperature, voltage, error code
+- **3 interface komunikasi**: UART Serial (921600 baud), CAN Servo (extended frame), CAN MIT (standard frame)
+- **Dual input mode**: Arus (A) atau Torsi (Nm) dengan konversi otomatis via Kt efektif
+- **Dual-plot real-time**: Arus (A) dan Torsi (Nm) — target vs aktual, rolling window 30 detik di 20 Hz
+- **Step sweep otomatis**: Start/end/step/dwell yang bisa dikonfigurasi, auto-capture di 80% waktu dwell
+- **Perekaman data CSV**: 14 kolom dengan header metadata, otomatis mulai saat connect
+- **Capture & anotasi**: Tandai titik data di grafik dengan label (target, aktual, error, torsi, kecepatan)
+- **Auto-detect CAN**: Deteksi otomatis motor CAN ID dari broadcast servo
+- **Auto-enter MIT mode**: Sekuens masuk MIT 5 percobaan dengan verifikasi
+- **Ramping arus**: Ramp rate bisa dikonfigurasi (A/s atau Nm/s) untuk mencegah gerakan menyentak
+- **E-STOP**: Shortcut tombol ESC, langsung nol-kan semua output
+- **Mode simulasi**: Simulasi fisika lengkap dengan noise untuk testing tanpa hardware
+- **Dark theme UI**: PySide6/Qt6 dengan stylesheet gelap
+- **Serial monitor**: Monitor UART opsional bersamaan dengan komunikasi CAN
+- **Telemetri langsung**: Arus, torsi, kecepatan, posisi, suhu, tegangan, kode error
 
 ---
 
-## Motor Specifications
+## Spesifikasi Motor
 
-| Parameter | Value | Description |
+| Parameter | Nilai | Keterangan |
 |---|---|---|
-| **Kt** | 0.056 Nm/A | Torque constant (pre-gearbox, rotor side) |
+| **Kt** | 0.056 Nm/A | Konstanta torsi (sisi rotor, sebelum gearbox) |
 | **Gear Ratio** | 10:1 | Planetary gearbox built-in |
-| **Gear Efficiency** | 0.86 | Back-calculated from rated operating point |
-| **Effective Kt** | 0.482 Nm/A | `0.056 x 10 x 0.86` — torque per ampere at output shaft |
-| **Pole Pairs** | 14 | 28 magnets (14 N-S pairs) |
-| **Rated Current** | 2.7 A | Continuous maximum |
-| **Peak Current** | 7.3 A | Instantaneous maximum |
-| **Rated Torque** | 1.3 Nm | Continuous at output shaft |
-| **Peak Torque** | 4.1 Nm | Instantaneous at output shaft |
-| **Rated Speed** | 435 rpm | Output shaft (= 60,900 ERPM) |
-| **Encoder** | 14-bit magnetic | Absolute, single-turn, inner ring |
-| **Backlash** | 18 arcmin (0.3 deg) | Undetectable by inner ring encoder |
+| **Efisiensi Gearbox** | 0.86 | Dihitung balik dari titik rated |
+| **Kt Efektif** | 0.482 Nm/A | `0.056 x 10 x 0.86` — torsi per ampere di output shaft |
+| **Pole Pairs** | 14 | 28 magnet (14 pasang N-S) |
+| **Arus Rated** | 2.7 A | Arus kontinu maksimum |
+| **Arus Peak** | 7.3 A | Arus sesaat maksimum |
+| **Torsi Rated** | 1.3 Nm | Torsi kontinu di output shaft |
+| **Torsi Peak** | 4.1 Nm | Torsi sesaat di output shaft |
+| **Kecepatan Rated** | 435 rpm | Output shaft (= 60.900 ERPM) |
+| **Encoder** | Magnetik 14-bit | Absolute, single-turn, inner ring |
+| **Backlash** | 18 arcmin (0.3 deg) | Tidak terdeteksi encoder inner ring |
 
 ---
 
-## Communication Modes
+## Mode Komunikasi
 
-| Mode | Interface | Speed | Frame Type | Protocol |
+| Mode | Interface | Kecepatan | Tipe Frame | Protokol |
 |---|---|---|---|---|
-| **UART Servo** | Serial USB | 40 Hz | CRC16-framed packets | `COMM_SET_CURRENT (6)` — current loop |
-| **CAN Servo** | socketCAN | 100 Hz | Extended CAN frames | `CAN_PACKET_SET_CURRENT (1)` — current loop |
-| **CAN MIT** | socketCAN | 100 Hz | Standard CAN frames | Impedance control: `tau = kp*(p_des-p) + kd*(v_des-v) + t_ff` |
+| **UART Servo** | Serial USB | 40 Hz | Paket CRC16 | `COMM_SET_CURRENT (6)` — current loop |
+| **CAN Servo** | socketCAN | 100 Hz | Extended CAN frame | `CAN_PACKET_SET_CURRENT (1)` — current loop |
+| **CAN MIT** | socketCAN | 100 Hz | Standard CAN frame | Kontrol impedansi: `tau = kp*(p_des-p) + kd*(v_des-v) + t_ff` |
 
-The application auto-detects the interface type from the dropdown selection:
-- **COM ports** (Windows) / **`/dev/ttyXXX`** (Linux) → UART Servo
-- **`can0`**, **`vcan0`** → CAN bus (tries MIT first, falls back to Servo)
-- **Simulation** → Software simulation with physics model
+Aplikasi mendeteksi tipe interface secara otomatis dari pilihan dropdown:
+- **COM port** (Windows) / **`/dev/ttyXXX`** (Linux) → UART Servo
+- **`can0`**, **`vcan0`** → CAN bus (coba MIT dulu, fallback ke Servo)
+- **Simulation** → Simulasi software dengan model fisika
 
 ---
 
-## Architecture
+## Arsitektur
 
 ```
 +--------------------------------------------------------------------+
 |                    Torsi_Encoder.py (PySide6 GUI)                   |
 |  +------------+  +-------------------------------------+           |
-|  |  App GUI   |  |       Real-Time Plots (pyqtgraph)   |           |
-|  | - controls |  |  Plot 1: Current (A) Target vs Act  |           |
-|  | - params   |  |  Plot 2: Torque (Nm) Target vs Act  |           |
+|  |  App GUI   |  |     Plot Real-Time (pyqtgraph)      |           |
+|  | - kontrol  |  |  Plot 1: Arus (A) Target vs Aktual  |           |
+|  | - param    |  |  Plot 2: Torsi (Nm) Target vs Aktual |           |
 |  | - sweep    |  +-------------------------------------+           |
-|  | - record   |                                                    |
+|  | - rekam    |                                                    |
 |  +-----+------+                                                    |
 |        | QTimer 50ms                                               |
 |  +-----v--------------------------------------------------+        |
-|  |              Motor Controllers                          |        |
+|  |              Motor Controller                           |        |
 |  |  +-----------------+      +-------------------------+   |        |
 |  |  | Motor (UART)    |      |  MotorCAN (CAN bus)     |   |        |
-|  |  | 40 Hz thread    |      |  100 Hz thread          |   |        |
+|  |  | Thread 40 Hz    |      |  Thread 100 Hz          |   |        |
 |  |  | Serial 921600   |      |  socketCAN 1 Mbps       |   |        |
-|  |  | CRC16 framed    |      |  MIT + SERVO modes      |   |        |
+|  |  | Frame CRC16     |      |  Mode MIT + SERVO       |   |        |
 |  |  +--------+--------+      +------------+------------+   |        |
 |  +-----------|-----------------------------|----------------+        |
 +--------------|-----------------------------|------------------------+
@@ -119,72 +119,72 @@ The application auto-detects the interface type from the dropdown selection:
               |                             |
               v                             v
       +---------------------------------------------+
-      |         CubeMars AK40-10 Motor               |
-      |   (14 PP, 10:1 gear, 4.1 Nm max)            |
+      |         Motor CubeMars AK40-10               |
+      |   (14 PP, 10:1 gear, maks 4.1 Nm)           |
       +---------------------------------------------+
 
-      Data output:  data/AK40-10_YYYY-MM-DD_HH-MM-SS.csv
+      Output data:  data/AK40-10_YYYY-MM-DD_HH-MM-SS.csv
 ```
 
-### Class Overview
+### Ringkasan Class
 
-| Class | Lines | Responsibility |
+| Class | Baris | Tanggung Jawab |
 |---|---|---|
-| `Motor` | 185–395 | UART Servo mode controller. Background thread at 40 Hz, CRC16 packet framing, current ramping, simulation mode. |
-| `MotorCAN` | 402–1083 | CAN bus controller (Servo + MIT). Background thread at 100 Hz, auto-detect motor ID, MIT enter/verify sequence, MCP2515 echo filtering, optional serial monitor, physics simulation. |
-| `App` | 1089–1960 | PySide6 GUI (QMainWindow). Builds UI, manages connection lifecycle, graph updates at 20 Hz, sweep automation, CSV recording, capture/annotation. |
+| `Motor` | 185–395 | Kontroler UART Servo mode. Thread background 40 Hz, frame CRC16, ramping arus, mode simulasi. |
+| `MotorCAN` | 402–1083 | Kontroler CAN bus (Servo + MIT). Thread background 100 Hz, auto-detect motor ID, sekuens masuk/verifikasi MIT, filter echo MCP2515, serial monitor opsional, simulasi fisika. |
+| `App` | 1089–1960 | GUI PySide6 (QMainWindow). Build UI, kelola koneksi, update grafik 20 Hz, automasi sweep, rekam CSV, capture/anotasi. |
 
 ---
 
-## Prerequisites
+## Prasyarat
 
 - **Python** >= 3.10
-- **OS**: Windows (UART) or Linux (UART + CAN)
-- **Hardware** (for real motor testing):
-  - CubeMars AK40-10 motor + driver board
-  - USB-UART adapter (for UART mode) OR
-  - MCP2515 SPI-CAN HAT on Raspberry Pi (for CAN mode)
-  - 24V DC power supply
+- **OS**: Windows (UART) atau Linux (UART + CAN)
+- **Hardware** (untuk testing motor asli):
+  - Motor CubeMars AK40-10 + driver board
+  - Adapter USB-UART (untuk mode UART) ATAU
+  - MCP2515 SPI-CAN HAT di Raspberry Pi (untuk mode CAN)
+  - Power supply DC 24V
 
-> CAN bus features (`can0`, MIT mode) require **Linux with socketCAN** support. On Windows, only UART and Simulation modes are available.
+> Fitur CAN bus (`can0`, MIT mode) membutuhkan **Linux dengan dukungan socketCAN**. Di Windows, hanya mode UART dan Simulasi yang tersedia.
 
 ---
 
-## Installation
+## Instalasi
 
 ```bash
-# Clone or copy the project
+# Clone atau copy proyek
 cd TorqMIT
 
-# Install dependencies
+# Install dependensi
 pip install -r requirements.txt
 ```
 
-### Dependencies
+### Dependensi
 
-| Package | Version | Purpose |
+| Package | Versi | Fungsi |
 |---|---|---|
-| `PySide6` | >= 6.8.0 | Qt6 GUI framework |
-| `pyqtgraph` | >= 0.13.0 | Real-time plotting |
-| `pyserial` | >= 3.5 | Serial/UART communication |
-| `numpy` | >= 2.0.0 | Numerical computation |
-| `python-can` | >= 4.4.0 | CAN bus communication (optional on Windows) |
+| `PySide6` | >= 6.8.0 | Framework GUI Qt6 |
+| `pyqtgraph` | >= 0.13.0 | Plotting real-time |
+| `pyserial` | >= 3.5 | Komunikasi serial/UART |
+| `numpy` | >= 2.0.0 | Komputasi numerik |
+| `python-can` | >= 4.4.0 | Komunikasi CAN bus (opsional di Windows) |
 
-### CAN Bus Setup (Linux/Raspberry Pi only)
+### Setup CAN Bus (Khusus Linux/Raspberry Pi)
 
 ```bash
-# Load kernel modules
+# Muat kernel module
 sudo modprobe can
 sudo modprobe can_raw
-sudo modprobe mcp251x   # for MCP2515 HAT
+sudo modprobe mcp251x   # untuk MCP2515 HAT
 
-# Bring up CAN interface at 1 Mbps
+# Nyalakan interface CAN di 1 Mbps
 sudo ip link set can0 up type can bitrate 1000000
 
-# Verify
+# Verifikasi
 ip -details link show can0
 
-# (Optional) Virtual CAN for testing without hardware
+# (Opsional) Virtual CAN untuk testing tanpa hardware
 sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
 sudo ip link set vcan0 up
@@ -192,126 +192,126 @@ sudo ip link set vcan0 up
 
 ---
 
-## Usage
+## Cara Pakai
 
-### Main Application (GUI)
+### Aplikasi Utama (GUI)
 
 ```bash
 python Torsi_Encoder.py
 ```
 
-Launches the full GUI with connection panel, parameter controls, real-time plots, sweep automation, and CSV recording.
+Membuka GUI lengkap dengan panel koneksi, kontrol parameter, plot real-time, automasi sweep, dan perekaman CSV.
 
-### CAN Diagnostic Script
+### Script Diagnostik CAN
 
 ```bash
-# Linux only, requires can0 interface up
+# Khusus Linux, interface can0 harus aktif
 python can_diag.py
 ```
 
-Step-by-step CAN bus diagnostic (202 lines):
+Diagnostik CAN bus step-by-step (202 baris):
 
-| Step | Action |
+| Langkah | Aksi |
 |---|---|
-| 1 | Passive listen (1s) — detect motor IDs from servo broadcast |
-| 2 | Send Servo current command (0.5 A) via extended frame, then stop |
-| 3 | MIT ENTER — up to 3 attempts (standard + extended frames) |
-| 4 | MIT zero-torque — verify MIT mode is active |
-| 5 | MIT 0.5 Nm — send torque for 2 seconds, print feedback at 10 Hz |
-| 6 | MIT EXIT — clean shutdown |
+| 1 | Listen pasif (1 detik) — deteksi motor ID dari broadcast servo |
+| 2 | Kirim perintah Servo current (0.5 A) via extended frame, lalu stop |
+| 3 | MIT ENTER — hingga 3 percobaan (standard + extended frame) |
+| 4 | MIT zero-torque — verifikasi mode MIT aktif |
+| 5 | MIT 0.5 Nm — kirim torsi selama 2 detik, cetak feedback 10 Hz |
+| 6 | MIT EXIT — shutdown bersih |
 
-### MIT Continuous Test Script
+### Script Tes MIT Kontinu
 
 ```bash
-# Linux only, requires can0 interface up
+# Khusus Linux, interface can0 harus aktif
 python can_test_mit.py
 ```
 
-10-second MIT mode test (148 lines):
+Tes MIT mode 10 detik (148 baris):
 
-| Phase | Duration | Action |
+| Fase | Durasi | Aksi |
 |---|---|---|
-| 1 | 0–5 s | Zero torque — move motor by hand, observe position/speed feedback |
-| 2 | 5–10 s | 0.5 Nm torque with kd=0.5 — motor spins at ~1 rad/s |
+| 1 | 0–5 detik | Zero torque — putar motor dengan tangan, amati feedback posisi/kecepatan |
+| 2 | 5–10 detik | 0.5 Nm torsi dengan kd=0.5 — motor berputar ~1 rad/s |
 
-Runs at 50 Hz, prints every 5th feedback frame, reports TX/RX/no-reply counts.
+Berjalan di 50 Hz, cetak setiap frame feedback ke-5, lapor jumlah TX/RX/no-reply.
 
 ---
 
-## GUI Workflow
+## Alur Kerja GUI
 
-### 1. Connection
+### 1. Koneksi
 
 ```
-[Interface dropdown] -> [CAN ID] -> [Connect]
+[Dropdown Interface] -> [CAN ID] -> [Connect]
 ```
 
-1. Click **R** (refresh) to scan available interfaces
-2. Select interface from dropdown:
-   - `COMx` / `/dev/ttyUSBx` — UART Servo mode
-   - `can0` / `vcan0` — CAN bus (auto-enters MIT, fallback to Servo)
-   - `Simulation` — software simulation
-3. Set **CAN ID** (default 2, set 0 for auto-detect)
-4. Click **Connect**
+1. Klik **R** (refresh) untuk scan interface yang tersedia
+2. Pilih interface dari dropdown:
+   - `COMx` / `/dev/ttyUSBx` — mode UART Servo
+   - `can0` / `vcan0` — CAN bus (otomatis masuk MIT, fallback ke Servo)
+   - `Simulation` — simulasi software
+3. Set **CAN ID** (default 2, set 0 untuk auto-detect)
+4. Klik **Connect**
 
-For CAN connections, the app runs a 4-step sequence:
-1. Auto-detect motor ID from servo broadcast traffic
-2. Send MIT EXIT to clean state
-3. Aggressive MIT ENTER (5 attempts, filtering MCP2515 echoes)
-4. Verify MIT with zero-torque command
+Untuk koneksi CAN, aplikasi menjalankan sekuens 4 langkah:
+1. Auto-detect motor ID dari traffic broadcast servo
+2. Kirim MIT EXIT untuk bersihkan state
+3. MIT ENTER agresif (5 percobaan, filter echo MCP2515)
+4. Verifikasi MIT dengan perintah zero-torque
 
-If MIT fails, falls back to CAN Servo mode automatically.
+Jika MIT gagal, otomatis fallback ke mode CAN Servo.
 
-### 2. Input Mode Selection
+### 2. Pemilihan Mode Input
 
-| Mode | Description |
+| Mode | Keterangan |
 |---|---|
-| **Current (A)** | Send amperage directly to motor. Default 0.5 A. |
-| **Torque (Nm)** | Convert to amperage via `I = tau / 0.482`, then send. |
+| **Arus (A)** | Kirim ampere langsung ke motor. Default 0.5 A. |
+| **Torsi (Nm)** | Dikonversi ke ampere via `I = tau / 0.482`, lalu dikirim. |
 
-Toggle via radio buttons in the "Input Mode" panel.
+Toggle lewat radio button di panel "Input Mode".
 
-### 3. Parameter Configuration
+### 3. Konfigurasi Parameter
 
-**UART Servo Parameters:**
+**Parameter UART Servo:**
 
-| Param | Default | Unit | Notes |
+| Param | Default | Satuan | Catatan |
 |---|---|---|---|
-| des P | 0.00 | deg | Stored, not sent in current loop |
-| des S | 5000 | ERPM | Stored, not sent in current loop |
-| des A | 30000 | ERPM/s^2 | Stored, not sent in current loop |
-| Ramp | 1.0 | A/s | Active — controls current ramp rate |
+| des P | 0.00 | deg | Disimpan, tidak dikirim di current loop |
+| des S | 5000 | ERPM | Disimpan, tidak dikirim di current loop |
+| des A | 30000 | ERPM/s^2 | Disimpan, tidak dikirim di current loop |
+| Ramp | 1.0 | A/s | Aktif — mengontrol kecepatan ramp arus |
 
-**MIT Control Parameters:**
+**Parameter MIT Control:**
 
-| Param | Default | Unit | Range | Notes |
+| Param | Default | Satuan | Range | Catatan |
 |---|---|---|---|---|
-| Kp | 0.0 | - | 0–500 | Position gain |
-| Kd | 0.5 | - | 0–5 | Velocity damping gain |
-| p_des | 0.0 | rad | -12.5 to 12.5 | Desired position |
-| v_des | 0.0 | rad/s | -45.5 to 45.5 | Desired velocity |
-| Ramp | 0.5 | Nm/s | - | Torque ramp rate |
+| Kp | 0.0 | - | 0–500 | Gain posisi |
+| Kd | 0.5 | - | 0–5 | Gain damping kecepatan |
+| p_des | 0.0 | rad | -12.5 s/d 12.5 | Posisi yang diinginkan |
+| v_des | 0.0 | rad/s | -45.5 s/d 45.5 | Kecepatan yang diinginkan |
+| Ramp | 0.5 | Nm/s | - | Kecepatan ramp torsi |
 
-**MIT Torque Equation:**
+**Persamaan Torsi MIT:**
 ```
 tau = kp * (p_des - p) + kd * (v_des - v) + t_ff
 ```
 
-For pure torque with speed damping, set `kp=0, v_des=0, kd>0`. Maximum speed = `t_ff / kd`.
+Untuk torsi murni dengan damping kecepatan, set `kp=0, v_des=0, kd>0`. Kecepatan maksimum = `t_ff / kd`.
 
-**Recommended MIT Settings:**
-| Kd | t_ff | Max Speed |
+**Setting MIT yang Direkomendasikan:**
+| Kd | t_ff | Kecepatan Maks |
 |---|---|---|
 | 0.5 | 0.5 Nm | ~1 rad/s |
 | 0.3 | 1.0 Nm | ~3.3 rad/s |
 
-### 4. Sending Commands
+### 4. Mengirim Perintah
 
-1. Enter setpoint value in the **Setpoint** box
-2. Click **Send** — motor ramps to target at configured ramp rate
-3. Click **Stop** — motor ramps down to zero
+1. Masukkan nilai setpoint di kotak **Setpoint**
+2. Klik **Send** — motor ramp ke target sesuai ramp rate yang dikonfigurasi
+3. Klik **Stop** — motor ramp turun ke nol
 
-The ramp prevents sudden current spikes:
+Ramp mencegah lonjakan arus mendadak:
 ```
 step = ramp_rate * dt
 if abs(target - ramped) < step:
@@ -320,136 +320,136 @@ else:
     ramped += step * sign(target - ramped)
 ```
 
-### 5. Step Sweep Automation
+### 5. Step Sweep Otomatis
 
 ```
 [Start] [End] [Step] [Dwell(s)] -> [Run Sweep]
 ```
 
-1. Configure sweep parameters:
-   - **Start**: first setpoint value
-   - **End**: last setpoint value
-   - **Step**: increment between steps
-   - **Dwell**: hold time per step (seconds)
-2. Click **Run Sweep**
-3. App automatically:
-   - Generates step sequence
-   - Sends each step to motor
-   - Holds for dwell time
-   - **Auto-captures** data at 80% of dwell time (when motor is settled)
-   - Auto-starts CSV recording if not already active
-   - Advances to next step
-4. Click **Abort** to stop mid-sweep
+1. Konfigurasi parameter sweep:
+   - **Start**: nilai setpoint pertama
+   - **End**: nilai setpoint terakhir
+   - **Step**: increment antar step
+   - **Dwell**: waktu tahan per step (detik)
+2. Klik **Run Sweep**
+3. Aplikasi secara otomatis:
+   - Generate urutan step
+   - Kirim setiap step ke motor
+   - Tahan selama waktu dwell
+   - **Auto-capture** data di 80% waktu dwell (saat motor sudah settle)
+   - Otomatis mulai rekam CSV jika belum aktif
+   - Lanjut ke step berikutnya
+4. Klik **Abort** untuk stop di tengah sweep
 
-Example: sweeping 0.1 to 0.5 A with step=0.1 and dwell=5s:
+Contoh: sweep 0.1 sampai 0.5 A dengan step=0.1 dan dwell=5s:
 ```
-Step 1: 0.100 A (hold 5s, capture at 4.0s)
-Step 2: 0.200 A (hold 5s, capture at 4.0s)
-Step 3: 0.300 A (hold 5s, capture at 4.0s)
-Step 4: 0.400 A (hold 5s, capture at 4.0s)
-Step 5: 0.500 A (hold 5s, capture at 4.0s)
--> Sweep COMPLETE!
+Step 1: 0.100 A (tahan 5s, capture di 4.0s)
+Step 2: 0.200 A (tahan 5s, capture di 4.0s)
+Step 3: 0.300 A (tahan 5s, capture di 4.0s)
+Step 4: 0.400 A (tahan 5s, capture di 4.0s)
+Step 5: 0.500 A (tahan 5s, capture di 4.0s)
+-> Sweep SELESAI!
 ```
 
-### 6. Data Recording
+### 6. Perekaman Data
 
-- **Auto-start**: recording begins automatically on connect
-- **Manual toggle**: Start/Stop recording buttons
-- Files saved to `data/` folder as `AK40-10_YYYY-MM-DD_HH-MM-SS.csv`
-- Row counter displayed during recording
-- See [CSV Data Format](#csv-data-format) for details
+- **Otomatis mulai**: rekaman dimulai otomatis saat connect
+- **Toggle manual**: tombol Start/Stop recording
+- File disimpan di folder `data/` dengan nama `AK40-10_YYYY-MM-DD_HH-MM-SS.csv`
+- Penghitung baris ditampilkan selama rekaman
+- Lihat [Format Data CSV](#format-data-csv) untuk detail
 
-### 7. Capture & Annotation
+### 7. Capture & Anotasi
 
-- Click **Capture Now** to mark current data point on graphs
-- Wait ~2 seconds for motor to settle, then snapshot
-- Annotations show: target value, actual value, error %, torque, speed
-- Green dots + text labels appear on both plots
+- Klik **Capture Now** untuk tandai titik data saat ini di grafik
+- Tunggu ~2 detik agar motor settle, lalu snapshot
+- Anotasi menampilkan: nilai target, nilai aktual, error %, torsi, kecepatan
+- Titik hijau + label teks muncul di kedua plot
 
 ### 8. Emergency Stop
 
-- Press **ESC** key or click **E-STOP [ESC]** button
-- Immediately zeros all outputs (current/torque set to 0)
-- Motor stops as fast as possible
-- Works in any mode (UART, CAN Servo, CAN MIT)
+- Tekan tombol **ESC** atau klik tombol **E-STOP [ESC]**
+- Langsung nol-kan semua output (arus/torsi di-set ke 0)
+- Motor berhenti secepat mungkin
+- Berfungsi di semua mode (UART, CAN Servo, CAN MIT)
 
 ---
 
-## MIT Mode Protocol
+## Protokol MIT Mode
 
-MIT mode uses standard CAN frames (not extended) with 8-byte packed commands:
+MIT mode menggunakan standard CAN frame (bukan extended) dengan command 8-byte ter-pack:
 
-### Command Frame (TX)
+### Frame Perintah (TX)
 
 ```
 CAN ID: motor_id (standard frame)
-Data [8 bytes]:
-  [0-1]  p_des    (16-bit, range -12.5 to 12.5 rad)
-  [2-3]  v_des    (12-bit) | kp (upper 4-bit)
-  [4]    kp       (lower 8-bit)
-  [5]    kd       (upper 8-bit)
-  [6]    kd (lower 4-bit) | t_ff (upper 4-bit)
-  [7]    t_ff     (lower 8-bit)
+Data [8 byte]:
+  [0-1]  p_des    (16-bit, range -12.5 s/d 12.5 rad)
+  [2-3]  v_des    (12-bit) | kp (4-bit atas)
+  [4]    kp       (8-bit bawah)
+  [5]    kd       (8-bit atas)
+  [6]    kd (4-bit bawah) | t_ff (4-bit atas)
+  [7]    t_ff     (8-bit bawah)
 ```
 
-### Reply Frame (RX)
+### Frame Balasan (RX)
 
 ```
-Data [8 bytes]:
+Data [8 byte]:
   [0]    motor_id
-  [1-2]  position  (16-bit, -12.5 to 12.5 rad)
-  [3-4]  velocity  (12-bit, -45.5 to 45.5 rad/s) | torque (upper 4-bit)
-  [5]    torque    (lower 8-bit, -5.0 to 5.0 Nm)
-  [6]    temperature (raw - 40 = Celsius)
-  [7]    error code
+  [1-2]  posisi    (16-bit, -12.5 s/d 12.5 rad)
+  [3-4]  kecepatan (12-bit, -45.5 s/d 45.5 rad/s) | torsi (4-bit atas)
+  [5]    torsi     (8-bit bawah, -5.0 s/d 5.0 Nm)
+  [6]    suhu      (raw - 40 = Celsius)
+  [7]    kode error
 ```
 
-### Special Commands
+### Perintah Khusus
 
-| Command | Data (8 bytes) | Purpose |
+| Perintah | Data (8 byte) | Fungsi |
 |---|---|---|
-| **Enter MIT** | `FF FF FF FF FF FF FF FC` | Switch motor to MIT mode |
-| **Exit MIT** | `FF FF FF FF FF FF FF FD` | Return to Servo mode |
-| **Set Zero** | `FF FF FF FF FF FF FF FE` | Set current position as origin |
+| **Masuk MIT** | `FF FF FF FF FF FF FF FC` | Pindahkan motor ke mode MIT |
+| **Keluar MIT** | `FF FF FF FF FF FF FF FD` | Kembali ke mode Servo |
+| **Set Nol** | `FF FF FF FF FF FF FF FE` | Set posisi saat ini sebagai titik nol |
 
 ---
 
-## Key Formulas
+## Rumus Utama
 
-### Torque at Output Shaft
+### Torsi di Output Shaft
 
 ```
-tau_output = Iq * Kt * Gear_Ratio * Gear_Efficiency
+tau_output = Iq * Kt * Gear_Ratio * Efisiensi_Gearbox
 tau_output = Iq * 0.056 * 10 * 0.86
 tau_output = Iq * 0.482
 ```
 
-### Current from Desired Torque
+### Arus dari Torsi yang Diinginkan
 
 ```
-Iq = tau_output / Effective_Kt
+Iq = tau_output / Kt_Efektif
 Iq = tau_output / 0.482
 
-Example: 0.5 Nm -> 0.5 / 0.482 = 1.038 A
+Contoh: 0.5 Nm -> 0.5 / 0.482 = 1.038 A
 ```
 
-### ERPM Conversion
+### Konversi ERPM
 
 ```
 ERPM = RPM_output * Pole_Pairs * Gear_Ratio
 ERPM = RPM_output * 14 * 10
 ERPM = RPM_output * 140
 
-Example: 435 rpm (rated) = 435 * 140 = 60,900 ERPM
+Contoh: 435 rpm (rated) = 435 * 140 = 60.900 ERPM
 ```
 
 ---
 
-## CSV Data Format
+## Format Data CSV
 
-Files are saved in `data/` with metadata headers and 14 data columns.
+File disimpan di `data/` dengan header metadata dan 14 kolom data.
 
-### Header (prefixed with `#`)
+### Header (diawali `#`)
 
 ```
 # AK40-10 Torque/Current Verification Log
@@ -465,42 +465,42 @@ Files are saved in `data/` with metadata headers and 14 data columns.
 # MIT p_des: 0.0
 ```
 
-### Data Columns
+### Kolom Data
 
-| Column | Unit | Description |
+| Kolom | Satuan | Keterangan |
 |---|---|---|
-| `time_s` | s | Elapsed time since connect |
-| `target_current_A` | A | Commanded current |
-| `actual_current_A` | A | Measured Iq current (feedback) |
-| `target_torque_Nm` | Nm | Computed target torque |
-| `actual_torque_Nm` | Nm | Computed actual torque |
-| `position_rad` | rad | Motor position (MIT) or degrees (Servo) |
-| `position_deg` | deg | Position in degrees |
-| `speed_rad_s` | rad/s | Angular velocity |
-| `speed_rpm` | rpm | Rotational speed |
-| `motor_temp_C` | C | Motor winding temperature |
-| `mos_temp_C` | C | MOSFET/driver temperature |
-| `voltage_V` | V | Input voltage |
-| `error_code` | - | 0=OK, 1-7=fault (see manual) |
-| `sweep_step` | - | Current sweep setpoint (or 0) |
+| `time_s` | s | Waktu sejak connect |
+| `target_current_A` | A | Arus yang diperintahkan |
+| `actual_current_A` | A | Arus Iq terukur (feedback) |
+| `target_torque_Nm` | Nm | Torsi target (dihitung) |
+| `actual_torque_Nm` | Nm | Torsi aktual (dihitung) |
+| `position_rad` | rad | Posisi motor (MIT) atau derajat (Servo) |
+| `position_deg` | deg | Posisi dalam derajat |
+| `speed_rad_s` | rad/s | Kecepatan sudut |
+| `speed_rpm` | rpm | Kecepatan putar |
+| `motor_temp_C` | C | Suhu kumparan motor |
+| `mos_temp_C` | C | Suhu MOSFET/driver |
+| `voltage_V` | V | Tegangan input |
+| `error_code` | - | 0=OK, 1-7=fault (lihat manual) |
+| `sweep_step` | - | Setpoint sweep saat ini (atau 0) |
 
 ---
 
-## Project Structure
+## Struktur Proyek
 
 ```
 TorqMIT/
-├── Torsi_Encoder.py       # Main GUI application (1998 lines)
-│   ├── Motor class         # UART Servo mode controller (40 Hz)
-│   ├── MotorCAN class      # CAN bus controller: Servo + MIT (100 Hz)
-│   └── App class           # PySide6 GUI, plots, sweep, recording
+├── Torsi_Encoder.py       # Aplikasi GUI utama (1998 baris)
+│   ├── class Motor          # Kontroler UART Servo mode (40 Hz)
+│   ├── class MotorCAN       # Kontroler CAN bus: Servo + MIT (100 Hz)
+│   └── class App            # GUI PySide6, plot, sweep, rekam data
 │
-├── can_diag.py             # CAN diagnostic CLI tool (202 lines)
-├── can_test_mit.py         # MIT mode continuous test CLI (148 lines)
-├── requirements.txt        # Python dependencies
-├── README.md               # This file
+├── can_diag.py             # Tool diagnostik CAN bus via CLI (202 baris)
+├── can_test_mit.py         # Tes MIT mode kontinu via CLI (148 baris)
+├── requirements.txt        # Dependensi Python
+├── README.md               # File ini
 │
-└── data/                   # Auto-generated CSV data logs
+└── data/                   # Log data CSV (otomatis di-generate)
     └── AK40-10_YYYY-MM-DD_HH-MM-SS.csv
 ```
 
@@ -510,35 +510,35 @@ TorqMIT/
 
 ### UART
 
-| Problem | Solution |
+| Masalah | Solusi |
 |---|---|
-| Port not listed | Click **R** to refresh. Check USB cable connection. |
-| No telemetry data | Verify baudrate is 921600. Check TX/RX wiring (TX->RX, RX->TX). |
-| Motor not responding | Ensure motor is in **Servo mode** via CubeMarsTool. Check power supply (24V). |
+| Port tidak muncul di daftar | Klik **R** untuk refresh. Cek koneksi kabel USB. |
+| Tidak ada data telemetri | Pastikan baudrate 921600. Cek wiring TX/RX (TX->RX, RX->TX). |
+| Motor tidak merespons | Pastikan motor dalam **Servo mode** via CubeMarsTool. Cek power supply (24V). |
 
 ### CAN Bus
 
-| Problem | Solution |
+| Masalah | Solusi |
 |---|---|
-| `can0` not listed | Run `sudo ip link set can0 up type can bitrate 1000000` |
-| Motor ID not detected | Check CAN_H/CAN_L wiring. Ensure motor is powered. Try setting ID manually (default: 2). |
-| MIT mode fails | Motor must be switched to MIT firmware via CubeMarsTool first. App will fall back to Servo mode. |
-| Echo frames (MCP2515) | Normal behavior — the app filters self-transmitted frames automatically. |
-| `python-can` not found | Install with `pip install python-can`. Only required for CAN mode. |
+| `can0` tidak muncul di daftar | Jalankan `sudo ip link set can0 up type can bitrate 1000000` |
+| Motor ID tidak terdeteksi | Cek wiring CAN_H/CAN_L. Pastikan motor menyala. Coba set ID manual (default: 2). |
+| MIT mode gagal | Motor harus dipindahkan ke firmware MIT dulu via CubeMarsTool. Aplikasi akan fallback ke mode Servo. |
+| Frame echo (MCP2515) | Perilaku normal — aplikasi otomatis mem-filter frame yang dikirim sendiri. |
+| `python-can` tidak ditemukan | Install dengan `pip install python-can`. Hanya diperlukan untuk mode CAN. |
 
-### General
+### Umum
 
-| Problem | Solution |
+| Masalah | Solusi |
 |---|---|
-| Motor spins fast in current loop | Normal — current loop has no speed limiter. Use MIT mode (`kd > 0`) for speed damping. |
-| Torque values seem off | Torque is calculated (`Iq * 0.482`), not measured. Verify with torque sensor for accuracy. |
-| Motor doesn't move < 0.5 A | Breakaway friction of gearbox is ~0.241 Nm (~0.5 A). Increase current. |
+| Motor berputar kencang di current loop | Normal — current loop tidak punya speed limiter. Gunakan MIT mode (`kd > 0`) untuk damping kecepatan. |
+| Nilai torsi terlihat tidak sesuai | Torsi dihitung (`Iq * 0.482`), bukan diukur langsung. Verifikasi dengan torque sensor untuk akurasi. |
+| Motor tidak bergerak di bawah 0.5 A | Gesekan breakaway gearbox ~0.241 Nm (~0.5 A). Naikkan arus. |
 
 ---
 
-## References
+## Referensi
 
-- **AK Series Driver Manual V1.0.18** — CubeMars (protocol specification, sections 5.1–5.3)
-- **AK40-10 Datasheet** — CubeMars (motor constants, electrical parameters)
-- **AK40-2410-1A-A1 Drive Installation Instructions** — CubeMars
-- [CubeMars Official Website](https://www.cubemars.com/)
+- **AK Series Driver Manual V1.0.18** — CubeMars (spesifikasi protokol, bagian 5.1–5.3)
+- **Datasheet AK40-10** — CubeMars (konstanta motor, parameter elektrik)
+- **Instruksi Instalasi Driver AK40-2410-1A-A1** — CubeMars
+- [Website Resmi CubeMars](https://www.cubemars.com/)
